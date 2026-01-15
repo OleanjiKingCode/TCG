@@ -384,27 +384,39 @@ function App() {
           </div>
         ) : allTerminals.length > 0 ? (
           <>
-            <div className="terminals-grid">
-              {currentTerminals.map((terminal, index) => (
-                <div
-                  key={terminal.terminalNumberId}
-                  className="terminal-card"
-                  style={{ animationDelay: `${index * 0.05}s` }}
-                >
-                  <div className="card-header">
-                    <span className="card-badge">
-                      #{terminal.terminalNumberId}
-                    </span>
-                  </div>
-                  <div className="terminal-number">{terminal.number}</div>
-                  <div className="terminal-info">
-                    <span className="info-label">Created</span>
-                    <span className="info-value">
-                      {formatDate(terminal.dateCreated)}
-                    </span>
-                  </div>
-                </div>
-              ))}
+            <div className="table-container">
+              <table className="terminals-table">
+                <thead>
+                  <tr>
+                    <th>#</th>
+                    <th>Terminal ID</th>
+                    <th>Terminal Number</th>
+                    <th>Date Created</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {currentTerminals.map((terminal, index) => (
+                    <tr
+                      key={terminal.terminalNumberId}
+                      className="table-row"
+                      style={{ animationDelay: `${index * 0.02}s` }}
+                    >
+                      <td className="row-index">
+                        {indexOfFirstItem + index + 1}
+                      </td>
+                      <td className="terminal-id">
+                        #{terminal.terminalNumberId}
+                      </td>
+                      <td className="terminal-number-cell">
+                        {terminal.number}
+                      </td>
+                      <td className="date-cell">
+                        {formatDate(terminal.dateCreated)}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             </div>
 
             {/* Pagination Controls */}
