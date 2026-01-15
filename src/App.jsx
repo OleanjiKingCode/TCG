@@ -189,38 +189,14 @@ function App() {
     setCurrentPage(1); // Reset to first page
   };
 
-  // Generate page numbers for pagination
-  const getPageNumbers = () => {
-    const pageNumbers = [];
-    const maxVisiblePages = 5;
+  // Go to first page
+  const goToFirstPage = () => {
+    handlePageChange(1);
+  };
 
-    if (totalPages <= maxVisiblePages) {
-      // Show all pages if total is less than max visible
-      for (let i = 1; i <= totalPages; i++) {
-        pageNumbers.push(i);
-      }
-    } else {
-      // Show smart pagination with ellipsis
-      if (currentPage <= 3) {
-        for (let i = 1; i <= 4; i++) pageNumbers.push(i);
-        pageNumbers.push("...");
-        pageNumbers.push(totalPages);
-      } else if (currentPage >= totalPages - 2) {
-        pageNumbers.push(1);
-        pageNumbers.push("...");
-        for (let i = totalPages - 3; i <= totalPages; i++) pageNumbers.push(i);
-      } else {
-        pageNumbers.push(1);
-        pageNumbers.push("...");
-        pageNumbers.push(currentPage - 1);
-        pageNumbers.push(currentPage);
-        pageNumbers.push(currentPage + 1);
-        pageNumbers.push("...");
-        pageNumbers.push(totalPages);
-      }
-    }
-
-    return pageNumbers;
+  // Go to last page
+  const goToLastPage = () => {
+    handlePageChange(totalPages);
   };
 
   return (
@@ -389,7 +365,6 @@ function App() {
                 <thead>
                   <tr>
                     <th>#</th>
-                    <th>Terminal ID</th>
                     <th>Terminal Number</th>
                     <th>Date Created</th>
                   </tr>
@@ -403,9 +378,6 @@ function App() {
                     >
                       <td className="row-index">
                         {indexOfFirstItem + index + 1}
-                      </td>
-                      <td className="terminal-id">
-                        #{terminal.terminalNumberId}
                       </td>
                       <td className="terminal-number-cell">
                         {terminal.number}
@@ -423,53 +395,52 @@ function App() {
             {totalPages > 1 && (
               <div className="pagination">
                 <button
-                  className="pagination-button"
+                  className="pagination-nav-button"
+                  onClick={goToFirstPage}
+                  disabled={currentPage === 1}
+                  title="First page"
+                >
+                  First
+                </button>
+
+                <button
+                  className="pagination-nav-button"
                   onClick={() => handlePageChange(currentPage - 1)}
                   disabled={currentPage === 1}
                   title="Previous page"
                 >
-                  <span>←</span>
+                  Previous
                 </button>
 
-                <div className="pagination-numbers">
-                  {getPageNumbers().map((pageNum, index) =>
-                    pageNum === "..." ? (
-                      <span
-                        key={`ellipsis-${index}`}
-                        className="pagination-ellipsis"
-                      >
-                        ...
-                      </span>
-                    ) : (
-                      <button
-                        key={pageNum}
-                        className={`pagination-number ${
-                          currentPage === pageNum ? "active" : ""
-                        }`}
-                        onClick={() => handlePageChange(pageNum)}
-                      >
-                        {pageNum}
-                      </button>
-                    )
-                  )}
+                <div className="pagination-info">
+                  <span className="page-indicator">
+                    Page <strong>{currentPage}</strong> of{" "}
+                    <strong>{totalPages}</strong>
+                  </span>
+                  <span className="pagination-range">
+                    Showing {indexOfFirstItem + 1}-
+                    {Math.min(indexOfLastItem, allTerminals.length)} of{" "}
+                    {allTerminals.length}
+                  </span>
                 </div>
 
                 <button
-                  className="pagination-button"
+                  className="pagination-nav-button"
                   onClick={() => handlePageChange(currentPage + 1)}
                   disabled={currentPage === totalPages}
                   title="Next page"
                 >
-                  <span>→</span>
+                  Next
                 </button>
 
-                <div className="pagination-info">
-                  Page {currentPage} of {totalPages}
-                  <span className="pagination-range">
-                    (Showing {indexOfFirstItem + 1}-
-                    {Math.min(indexOfLastItem, allTerminals.length)})
-                  </span>
-                </div>
+                <button
+                  className="pagination-nav-button"
+                  onClick={goToLastPage}
+                  disabled={currentPage === totalPages}
+                  title="Last page"
+                >
+                  Last
+                </button>
               </div>
             )}
           </>
