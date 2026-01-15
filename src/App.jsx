@@ -371,29 +371,8 @@ function App() {
             {allTerminals.length > 0 && (
               <div className="flex items-center gap-4">
                 <span className="text-sm text-gray-600 bg-gray-100 px-3 py-1.5 rounded-full">
-                  Total Arrivals: {allTerminals.length}
+                  Total Codes: {allTerminals.length}
                 </span>
-                <div className="flex items-center gap-2">
-                  <label
-                    htmlFor="itemsPerPage"
-                    className="text-sm text-gray-600"
-                  >
-                    Show per Page:
-                  </label>
-                  <select
-                    id="itemsPerPage"
-                    value={itemsPerPage}
-                    onChange={(e) =>
-                      handleItemsPerPageChange(Number(e.target.value))
-                    }
-                    className="px-3 py-1.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none"
-                  >
-                    <option value={5}>5</option>
-                    <option value={10}>10</option>
-                    <option value={20}>20</option>
-                    <option value={50}>50</option>
-                  </select>
-                </div>
               </div>
             )}
           </div>
@@ -415,40 +394,13 @@ function App() {
 
                       <th className="px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
                         Terminal Number
-                        <button className="ml-1 inline-flex items-center">
-                          <svg
-                            className="w-3 h-3"
-                            fill="currentColor"
-                            viewBox="0 0 20 20"
-                          >
-                            <path d="M5 10l5-5 5 5H5z" />
-                          </svg>
-                        </button>
                       </th>
 
                       <th className="px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
                         Date Created
-                        <button className="ml-1 inline-flex items-center">
-                          <svg
-                            className="w-3 h-3"
-                            fill="currentColor"
-                            viewBox="0 0 20 20"
-                          >
-                            <path d="M5 10l5-5 5 5H5z" />
-                          </svg>
-                        </button>
                       </th>
                       <th className="px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
                         Time
-                        <button className="ml-1 inline-flex items-center">
-                          <svg
-                            className="w-3 h-3"
-                            fill="currentColor"
-                            viewBox="0 0 20 20"
-                          >
-                            <path d="M5 10l5-5 5 5H5z" />
-                          </svg>
-                        </button>
                       </th>
                     </tr>
                   </thead>
