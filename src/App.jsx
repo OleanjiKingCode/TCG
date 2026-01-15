@@ -1,6 +1,5 @@
 import { useState, useEffect } from "react";
 import toast, { Toaster } from "react-hot-toast";
-import "./App.css";
 
 function App() {
   const [code, setCode] = useState("");
@@ -14,7 +13,7 @@ function App() {
 
   // Pagination states
   const [currentPage, setCurrentPage] = useState(1);
-  const [itemsPerPage, setItemsPerPage] = useState(12);
+  const [itemsPerPage, setItemsPerPage] = useState(5);
 
   const API_BASE_URL =
     "https://test.xpresspayments.com:9007/api/TerminalNumber";
@@ -45,9 +44,7 @@ function App() {
       if (data.responseCode === "00") {
         setCode(data.data);
         toast.success("Terminal number generated successfully!");
-        // Fetch details of the generated terminal
         await fetchTerminalDetails(data.data);
-        // Refresh the terminals list
         handleGetAllTerminals();
       } else {
         toast.error(
@@ -137,7 +134,6 @@ function App() {
       if (data.responseCode === "00") {
         setAllTerminals(data.data || []);
         if (allTerminals.length === 0 && data.data?.length > 0) {
-          // Only show toast on initial load if terminals are found
           toast.success(`Loaded ${data.data.length} terminals`);
         }
       } else {
@@ -156,7 +152,11 @@ function App() {
   // Format date for display
   const formatDate = (dateString) => {
     const date = new Date(dateString);
-    return date.toLocaleString();
+    return date.toLocaleDateString("en-GB", {
+      day: "2-digit",
+      month: "2-digit",
+      year: "numeric",
+    });
   };
 
   // Pagination calculations
@@ -176,31 +176,52 @@ function App() {
   // Handle page change
   const handlePageChange = (pageNumber) => {
     setCurrentPage(pageNumber);
-    // Scroll to terminals section
-    document.querySelector(".terminals-section")?.scrollIntoView({
-      behavior: "smooth",
-      block: "start",
-    });
   };
 
   // Handle items per page change
   const handleItemsPerPageChange = (newItemsPerPage) => {
     setItemsPerPage(newItemsPerPage);
-    setCurrentPage(1); // Reset to first page
+    setCurrentPage(1);
   };
 
-  // Go to first page
-  const goToFirstPage = () => {
-    handlePageChange(1);
-  };
+  // Generate page numbers for pagination
+  const getPageNumbers = () => {
+    const pages = [];
+    const maxVisiblePages = 5;
 
-  // Go to last page
-  const goToLastPage = () => {
-    handlePageChange(totalPages);
+    if (totalPages <= maxVisiblePages) {
+      for (let i = 1; i <= totalPages; i++) {
+        pages.push(i);
+      }
+    } else {
+      if (currentPage <= 3) {
+        for (let i = 1; i <= 4; i++) {
+          pages.push(i);
+        }
+        pages.push("...");
+        pages.push(totalPages);
+      } else if (currentPage >= totalPages - 2) {
+        pages.push(1);
+        pages.push("...");
+        for (let i = totalPages - 3; i <= totalPages; i++) {
+          pages.push(i);
+        }
+      } else {
+        pages.push(1);
+        pages.push("...");
+        pages.push(currentPage - 1);
+        pages.push(currentPage);
+        pages.push(currentPage + 1);
+        pages.push("...");
+        pages.push(totalPages);
+      }
+    }
+
+    return pages;
   };
 
   return (
-    <div className="app-container">
+    <div className="min-h-screen bg-gray-50">
       <Toaster
         position="top-right"
         toastOptions={{
@@ -208,249 +229,361 @@ function App() {
           style: {
             background: "#fff",
             color: "#000",
-            border: "2px solid #23ab76",
+            border: "2px solid #10b981",
             padding: "16px",
             fontSize: "14px",
             fontWeight: "500",
           },
           success: {
             iconTheme: {
-              primary: "#23ab76",
+              primary: "#10b981",
               secondary: "#fff",
             },
           },
           error: {
             iconTheme: {
-              primary: "#d32f2f",
+              primary: "#ef4444",
               secondary: "#fff",
             },
             style: {
-              border: "2px solid #d32f2f",
+              border: "2px solid #ef4444",
             },
           },
         }}
       />
 
-      <header className="header">
-        <h1 className="title">POS Terminal Code Generator</h1>
-        <p className="subtitle">Generate and manage terminal numbers</p>
-      </header>
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {/* Header */}
+        <header className="text-center mb-8">
+          <h1 className="text-3xl font-bold text-gray-900 mb-2">
+            POS Terminal Code Generator
+          </h1>
+          <p className="text-sm text-gray-600">
+            Generate and manage terminal numbers
+          </p>
+        </header>
 
-      {/* Top Controls - Search and Generate */}
-      <div className="top-controls">
-        <div className="search-container">
-          <input
-            type="text"
-            value={searchNumber}
-            onChange={(e) => setSearchNumber(e.target.value.toUpperCase())}
-            onKeyPress={(e) =>
-              e.key === "Enter" &&
-              !loadingSearch &&
-              searchNumber.trim() &&
-              handleSearchTerminal()
-            }
-            placeholder="Search terminal number..."
-            disabled={loadingSearch}
-            className="search-input"
-          />
+        {/* Top Controls - Search and Generate */}
+        <div className="mb-6 flex flex-col sm:flex-row gap-4">
+          <div className="flex-1 flex gap-3">
+            <input
+              type="text"
+              value={searchNumber}
+              onChange={(e) => setSearchNumber(e.target.value.toUpperCase())}
+              onKeyPress={(e) =>
+                e.key === "Enter" &&
+                !loadingSearch &&
+                searchNumber.trim() &&
+                handleSearchTerminal()
+              }
+              placeholder="Search terminal number..."
+              disabled={loadingSearch}
+              className="flex-1 px-4 py-2.5 text-sm border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none transition-all"
+            />
+            <button
+              onClick={handleSearchTerminal}
+              disabled={loadingSearch || !searchNumber.trim()}
+              className="px-6 py-2.5 bg-emerald-500 text-white text-sm font-semibold rounded-lg hover:bg-emerald-600 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors"
+            >
+              {loadingSearch ? (
+                <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+              ) : (
+                "Search"
+              )}
+            </button>
+          </div>
+
           <button
-            className="search-button text-sm"
-            onClick={handleSearchTerminal}
-            disabled={loadingSearch || !searchNumber.trim()}
-            title="Search"
+            onClick={handleGenerateCode}
+            disabled={loading}
+            className="px-6 py-2.5 bg-emerald-500 text-white text-sm font-semibold rounded-lg hover:bg-emerald-600 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors flex items-center justify-center gap-2"
           >
-            {loadingSearch ? <span className="spinner-small"></span> : "Search"}
+            {loading ? (
+              <>
+                <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                <span>Generating...</span>
+              </>
+            ) : (
+              <>
+                <span className="text-xl font-light">+</span>
+                <span>Generate New</span>
+              </>
+            )}
           </button>
         </div>
 
-        <button
-          className="generate-button"
-          onClick={handleGenerateCode}
-          disabled={loading}
-        >
-          {loading ? (
-            <>
-              <span className="spinner-small"></span>
-              <span>Generating...</span>
-            </>
-          ) : (
-            <>
-              <span className="button-icon">+</span>
-              <span>Generate New</span>
-            </>
-          )}
-        </button>
-      </div>
-
-      {/* Generated Code Display */}
-      {code && !loading && (
-        <div className="new-code-display animate-in">
-          <div className="code-content">
-            <span className="new-code-label">New Terminal Code</span>
-            <span className="new-code-value">{code}</span>
-          </div>
-          {terminalDetails && (
-            <div className="code-meta">
-              <span className="meta-item">
-                <strong>ID:</strong> {terminalDetails.terminalNumberId}
+        {/* Generated Code Display */}
+        {code && !loading && (
+          <div className="mb-6 p-6 bg-gradient-to-r from-emerald-50 to-white border-2 border-emerald-500 rounded-xl shadow-lg animate-slideDown">
+            <div className="mb-4">
+              <span className="text-xs font-semibold text-gray-600 uppercase tracking-wide">
+                New Terminal Code
               </span>
-              <span className="meta-item">
-                <strong>Created:</strong>{" "}
-                {formatDate(terminalDetails.dateCreated)}
+              <div className="mt-2 text-2xl font-bold text-gray-900 font-mono tracking-wider">
+                {code}
+              </div>
+            </div>
+            {terminalDetails && (
+              <div className="pt-4 border-t border-gray-200 flex gap-6 text-sm">
+                <span className="text-gray-600">
+                  <strong className="text-gray-900">ID:</strong>{" "}
+                  {terminalDetails.terminalNumberId}
+                </span>
+                <span className="text-gray-600">
+                  <strong className="text-gray-900">Created:</strong>{" "}
+                  {formatDate(terminalDetails.dateCreated)}
+                </span>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Search Result Display */}
+        {searchResult && !code && (
+          <div className="mb-6 p-6 bg-gradient-to-r from-blue-50 to-white border-2 border-blue-500 rounded-xl shadow-lg animate-slideDown">
+            <div className="mb-4">
+              <span className="text-xs font-semibold text-gray-600 uppercase tracking-wide">
+                Search Result
+              </span>
+              <div className="mt-2 text-2xl font-bold text-gray-900 font-mono tracking-wider">
+                {searchResult.number}
+              </div>
+            </div>
+            <div className="pt-4 border-t border-gray-200 flex gap-6 text-sm">
+              <span className="text-gray-600">
+                <strong className="text-gray-900">ID:</strong>{" "}
+                {searchResult.terminalNumberId}
+              </span>
+              <span className="text-gray-600">
+                <strong className="text-gray-900">Created:</strong>{" "}
+                {formatDate(searchResult.dateCreated)}
               </span>
             </div>
-          )}
-        </div>
-      )}
-
-      {/* Search Result Display */}
-      {searchResult && !code && (
-        <div className="new-code-display animate-in">
-          <div className="code-content">
-            <span className="new-code-label">Search Result</span>
-            <span className="new-code-value">{searchResult.number}</span>
           </div>
-          <div className="code-meta">
-            <span className="meta-item">
-              <strong>ID:</strong> {searchResult.terminalNumberId}
-            </span>
-            <span className="meta-item">
-              <strong>Created:</strong> {formatDate(searchResult.dateCreated)}
-            </span>
-          </div>
-        </div>
-      )}
+        )}
 
-      {/* All Terminal Codes Grid */}
-      <div className="terminals-section">
-        <div className="section-header">
-          <h2>All Terminal Codes</h2>
-          <div className="section-header-controls">
+        {/* All Terminal Codes Table */}
+        <div className="bg-white rounded-lg shadow">
+          <div className="px-6 py-4 border-b border-gray-200 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+            <h2 className="text-lg font-semibold text-gray-900">
+              All Terminal Codes
+            </h2>
             {allTerminals.length > 0 && (
-              <>
-                <span className="terminal-count">
-                  {allTerminals.length} terminals
+              <div className="flex items-center gap-4">
+                <span className="text-sm text-gray-600 bg-gray-100 px-3 py-1.5 rounded-full">
+                  Total Arrivals: {allTerminals.length}
                 </span>
-                <div className="items-per-page">
-                  <label htmlFor="itemsPerPage">Show:</label>
+                <div className="flex items-center gap-2">
+                  <label
+                    htmlFor="itemsPerPage"
+                    className="text-sm text-gray-600"
+                  >
+                    Show per Page:
+                  </label>
                   <select
                     id="itemsPerPage"
                     value={itemsPerPage}
                     onChange={(e) =>
                       handleItemsPerPageChange(Number(e.target.value))
                     }
-                    className="items-select"
+                    className="px-3 py-1.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none"
                   >
-                    <option value={6}>6</option>
-                    <option value={12}>12</option>
-                    <option value={24}>24</option>
-                    <option value={48}>48</option>
-                    <option value={allTerminals.length}>All</option>
+                    <option value={5}>5</option>
+                    <option value={10}>10</option>
+                    <option value={20}>20</option>
+                    <option value={50}>50</option>
                   </select>
                 </div>
-              </>
-            )}
-          </div>
-        </div>
-
-        {loadingAll ? (
-          <div className="loading-container">
-            <div className="spinner"></div>
-            <p>Loading terminals...</p>
-          </div>
-        ) : allTerminals.length > 0 ? (
-          <>
-            <div className="table-container">
-              <table className="terminals-table">
-                <thead>
-                  <tr>
-                    <th>#</th>
-                    <th>Terminal Number</th>
-                    <th>Date Created</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {currentTerminals.map((terminal, index) => (
-                    <tr
-                      key={terminal.terminalNumberId}
-                      className="table-row"
-                      style={{ animationDelay: `${index * 0.02}s` }}
-                    >
-                      <td className="row-index">
-                        {indexOfFirstItem + index + 1}
-                      </td>
-                      <td className="terminal-number-cell">
-                        {terminal.number}
-                      </td>
-                      <td className="date-cell">
-                        {formatDate(terminal.dateCreated)}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-
-            {/* Pagination Controls */}
-            {totalPages > 1 && (
-              <div className="pagination">
-                <button
-                  className="pagination-nav-button"
-                  onClick={goToFirstPage}
-                  disabled={currentPage === 1}
-                  title="First page"
-                >
-                  First
-                </button>
-
-                <button
-                  className="pagination-nav-button"
-                  onClick={() => handlePageChange(currentPage - 1)}
-                  disabled={currentPage === 1}
-                  title="Previous page"
-                >
-                  Previous
-                </button>
-
-                <div className="pagination-info">
-                  <span className="page-indicator">
-                    Page <strong>{currentPage}</strong> of{" "}
-                    <strong>{totalPages}</strong>
-                  </span>
-                  <span className="pagination-range">
-                    Showing {indexOfFirstItem + 1}-
-                    {Math.min(indexOfLastItem, allTerminals.length)} of{" "}
-                    {allTerminals.length}
-                  </span>
-                </div>
-
-                <button
-                  className="pagination-nav-button"
-                  onClick={() => handlePageChange(currentPage + 1)}
-                  disabled={currentPage === totalPages}
-                  title="Next page"
-                >
-                  Next
-                </button>
-
-                <button
-                  className="pagination-nav-button"
-                  onClick={goToLastPage}
-                  disabled={currentPage === totalPages}
-                  title="Last page"
-                >
-                  Last
-                </button>
               </div>
             )}
-          </>
-        ) : (
-          <div className="empty-state">
-            <div className="empty-icon">📋</div>
-            <h3>No terminals available</h3>
-            <p>Generate your first terminal number to get started</p>
           </div>
-        )}
+
+          {loadingAll ? (
+            <div className="flex flex-col items-center justify-center py-16">
+              <div className="w-12 h-12 border-4 border-gray-200 border-t-emerald-500 rounded-full animate-spin" />
+              <p className="mt-4 text-sm text-gray-600">Loading terminals...</p>
+            </div>
+          ) : allTerminals.length > 0 ? (
+            <>
+              <div className="overflow-x-auto">
+                <table className="w-full">
+                  <thead>
+                    <tr className="bg-gray-50 border-b border-gray-200">
+                      <th className="px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
+                        S/N
+                      </th>
+
+                      <th className="px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
+                        Terminal Number
+                        <button className="ml-1 inline-flex items-center">
+                          <svg
+                            className="w-3 h-3"
+                            fill="currentColor"
+                            viewBox="0 0 20 20"
+                          >
+                            <path d="M5 10l5-5 5 5H5z" />
+                          </svg>
+                        </button>
+                      </th>
+
+                      <th className="px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
+                        Date Created
+                        <button className="ml-1 inline-flex items-center">
+                          <svg
+                            className="w-3 h-3"
+                            fill="currentColor"
+                            viewBox="0 0 20 20"
+                          >
+                            <path d="M5 10l5-5 5 5H5z" />
+                          </svg>
+                        </button>
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
+                        Time
+                        <button className="ml-1 inline-flex items-center">
+                          <svg
+                            className="w-3 h-3"
+                            fill="currentColor"
+                            viewBox="0 0 20 20"
+                          >
+                            <path d="M5 10l5-5 5 5H5z" />
+                          </svg>
+                        </button>
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody className="bg-white divide-y divide-gray-200">
+                    {currentTerminals.map((terminal, index) => (
+                      <tr
+                        key={terminal.terminalNumberId}
+                        className="hover:bg-gray-50 transition-colors"
+                      >
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                          {index + 1}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <a
+                            href={`#terminal-${terminal.number}`}
+                            className="text-sm font-medium text-blue-600 hover:text-blue-800 hover:underline"
+                          >
+                            {terminal.number}
+                          </a>
+                        </td>
+
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                          {formatDate(terminal.dateCreated)}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                          {new Date(terminal.dateCreated).toLocaleTimeString(
+                            "en-US",
+                            {
+                              hour: "2-digit",
+                              minute: "2-digit",
+                            }
+                          )}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+
+              {/* Pagination */}
+              {totalPages > 1 && (
+                <div className="px-6 py-4 border-t border-gray-200 flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => handlePageChange(currentPage - 1)}
+                      disabled={currentPage === 1}
+                      className="p-2 rounded-lg border border-gray-300 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                    >
+                      <svg
+                        className="w-5 h-5 text-gray-600"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M15 19l-7-7 7-7"
+                        />
+                      </svg>
+                    </button>
+
+                    <div className="flex items-center gap-1">
+                      {getPageNumbers().map((page, index) => (
+                        <button
+                          key={index}
+                          onClick={() =>
+                            typeof page === "number" && handlePageChange(page)
+                          }
+                          disabled={page === "..."}
+                          className={`min-w-[40px] h-10 px-3 text-sm font-medium rounded-lg transition-colors ${
+                            page === currentPage
+                              ? "bg-emerald-500 text-white"
+                              : page === "..."
+                              ? "cursor-default text-gray-400"
+                              : "text-gray-700 hover:bg-gray-100"
+                          }`}
+                        >
+                          {page}
+                        </button>
+                      ))}
+                    </div>
+
+                    <button
+                      onClick={() => handlePageChange(currentPage + 1)}
+                      disabled={currentPage === totalPages}
+                      className="p-2 rounded-lg border border-gray-300 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                    >
+                      <svg
+                        className="w-5 h-5 text-gray-600"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M9 5l7 7-7 7"
+                        />
+                      </svg>
+                    </button>
+                  </div>
+
+                  <div className="text-sm text-gray-600">
+                    Show per Page:{" "}
+                    <select
+                      value={itemsPerPage}
+                      onChange={(e) =>
+                        handleItemsPerPageChange(Number(e.target.value))
+                      }
+                      className="ml-2 px-2 py-1 border border-gray-300 rounded focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none"
+                    >
+                      <option value={5}>5</option>
+                      <option value={10}>10</option>
+                      <option value={20}>20</option>
+                      <option value={50}>50</option>
+                    </select>
+                  </div>
+                </div>
+              )}
+            </>
+          ) : (
+            <div className="flex flex-col items-center justify-center py-16">
+              <div className="text-6xl mb-4">📋</div>
+              <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                No terminals available
+              </h3>
+              <p className="text-sm text-gray-600">
+                Generate your first terminal number to get started
+              </p>
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );
