@@ -12,6 +12,10 @@ function App() {
   const [loadingSearch, setLoadingSearch] = useState(false);
   const [loadingAll, setLoadingAll] = useState(true);
 
+  // Pagination states
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(12);
+
   const API_BASE_URL =
     "https://test.xpresspayments.com:9007/api/TerminalNumber";
 
@@ -155,6 +159,70 @@ function App() {
     return date.toLocaleString();
   };
 
+  // Pagination calculations
+  const totalPages = Math.ceil(allTerminals.length / itemsPerPage);
+  const indexOfLastItem = currentPage * itemsPerPage;
+  const indexOfFirstItem = indexOfLastItem - itemsPerPage;
+  const currentTerminals = allTerminals.slice(
+    indexOfFirstItem,
+    indexOfLastItem
+  );
+
+  // Reset to first page when terminals data changes
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [allTerminals.length]);
+
+  // Handle page change
+  const handlePageChange = (pageNumber) => {
+    setCurrentPage(pageNumber);
+    // Scroll to terminals section
+    document.querySelector(".terminals-section")?.scrollIntoView({
+      behavior: "smooth",
+      block: "start",
+    });
+  };
+
+  // Handle items per page change
+  const handleItemsPerPageChange = (newItemsPerPage) => {
+    setItemsPerPage(newItemsPerPage);
+    setCurrentPage(1); // Reset to first page
+  };
+
+  // Generate page numbers for pagination
+  const getPageNumbers = () => {
+    const pageNumbers = [];
+    const maxVisiblePages = 5;
+
+    if (totalPages <= maxVisiblePages) {
+      // Show all pages if total is less than max visible
+      for (let i = 1; i <= totalPages; i++) {
+        pageNumbers.push(i);
+      }
+    } else {
+      // Show smart pagination with ellipsis
+      if (currentPage <= 3) {
+        for (let i = 1; i <= 4; i++) pageNumbers.push(i);
+        pageNumbers.push("...");
+        pageNumbers.push(totalPages);
+      } else if (currentPage >= totalPages - 2) {
+        pageNumbers.push(1);
+        pageNumbers.push("...");
+        for (let i = totalPages - 3; i <= totalPages; i++) pageNumbers.push(i);
+      } else {
+        pageNumbers.push(1);
+        pageNumbers.push("...");
+        pageNumbers.push(currentPage - 1);
+        pageNumbers.push(currentPage);
+        pageNumbers.push(currentPage + 1);
+        pageNumbers.push("...");
+        pageNumbers.push(totalPages);
+      }
+    }
+
+    return pageNumbers;
+  };
+
   return (
     <div className="app-container">
       <Toaster
@@ -281,11 +349,32 @@ function App() {
       <div className="terminals-section">
         <div className="section-header">
           <h2>All Terminal Codes</h2>
-          {allTerminals.length > 0 && (
-            <span className="terminal-count">
-              {allTerminals.length} terminals
-            </span>
-          )}
+          <div className="section-header-controls">
+            {allTerminals.length > 0 && (
+              <>
+                <span className="terminal-count">
+                  {allTerminals.length} terminals
+                </span>
+                <div className="items-per-page">
+                  <label htmlFor="itemsPerPage">Show:</label>
+                  <select
+                    id="itemsPerPage"
+                    value={itemsPerPage}
+                    onChange={(e) =>
+                      handleItemsPerPageChange(Number(e.target.value))
+                    }
+                    className="items-select"
+                  >
+                    <option value={6}>6</option>
+                    <option value={12}>12</option>
+                    <option value={24}>24</option>
+                    <option value={48}>48</option>
+                    <option value={allTerminals.length}>All</option>
+                  </select>
+                </div>
+              </>
+            )}
+          </div>
         </div>
 
         {loadingAll ? (
@@ -294,28 +383,84 @@ function App() {
             <p>Loading terminals...</p>
           </div>
         ) : allTerminals.length > 0 ? (
-          <div className="terminals-grid">
-            {allTerminals.map((terminal, index) => (
-              <div
-                key={terminal.terminalNumberId}
-                className="terminal-card"
-                style={{ animationDelay: `${index * 0.05}s` }}
-              >
-                <div className="card-header">
-                  <span className="card-badge">
-                    #{terminal.terminalNumberId}
-                  </span>
+          <>
+            <div className="terminals-grid">
+              {currentTerminals.map((terminal, index) => (
+                <div
+                  key={terminal.terminalNumberId}
+                  className="terminal-card"
+                  style={{ animationDelay: `${index * 0.05}s` }}
+                >
+                  <div className="card-header">
+                    <span className="card-badge">
+                      #{terminal.terminalNumberId}
+                    </span>
+                  </div>
+                  <div className="terminal-number">{terminal.number}</div>
+                  <div className="terminal-info">
+                    <span className="info-label">Created</span>
+                    <span className="info-value">
+                      {formatDate(terminal.dateCreated)}
+                    </span>
+                  </div>
                 </div>
-                <div className="terminal-number">{terminal.number}</div>
-                <div className="terminal-info">
-                  <span className="info-label">Created</span>
-                  <span className="info-value">
-                    {formatDate(terminal.dateCreated)}
+              ))}
+            </div>
+
+            {/* Pagination Controls */}
+            {totalPages > 1 && (
+              <div className="pagination">
+                <button
+                  className="pagination-button"
+                  onClick={() => handlePageChange(currentPage - 1)}
+                  disabled={currentPage === 1}
+                  title="Previous page"
+                >
+                  <span>←</span>
+                </button>
+
+                <div className="pagination-numbers">
+                  {getPageNumbers().map((pageNum, index) =>
+                    pageNum === "..." ? (
+                      <span
+                        key={`ellipsis-${index}`}
+                        className="pagination-ellipsis"
+                      >
+                        ...
+                      </span>
+                    ) : (
+                      <button
+                        key={pageNum}
+                        className={`pagination-number ${
+                          currentPage === pageNum ? "active" : ""
+                        }`}
+                        onClick={() => handlePageChange(pageNum)}
+                      >
+                        {pageNum}
+                      </button>
+                    )
+                  )}
+                </div>
+
+                <button
+                  className="pagination-button"
+                  onClick={() => handlePageChange(currentPage + 1)}
+                  disabled={currentPage === totalPages}
+                  title="Next page"
+                >
+                  <span>→</span>
+                </button>
+
+                <div className="pagination-info">
+                  Page {currentPage} of {totalPages}
+                  <span className="pagination-range">
+                    (Showing {indexOfFirstItem + 1}-
+                    {Math.min(indexOfLastItem, allTerminals.length)})
                   </span>
                 </div>
               </div>
-            ))}
-          </div>
+            )}
+          </>
         ) : (
           <div className="empty-state">
             <div className="empty-icon">📋</div>
